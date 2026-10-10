@@ -1,0 +1,72 @@
+# ============================================================================
+# pfSense log capture -- configuration
+# ----------------------------------------------------------------------------
+# Every value here can be overridden by a matching CLI flag on the script.
+# Secrets, LAN IPs, and hostnames are intentionally scrubbed -- plug in your
+# own environment below. Ports are kept verbatim (they are not secrets).
+# ============================================================================
+
+listen:
+  host: 0.0.0.0          # bind address (0.0.0.0 = all interfaces)
+  port: 42069            # UDP syslog receive port (keep the port, it is public knowledge)
+
+# ---- receiver.py (continuous capture) --------------------------------------
+receiver:
+  dump: pfsense.log      # append received lines to this file
+  max_size: 10485760     # bytes before rotation (default 10MB)
+  timestamp: true        # prefix each line with local ISO-8601 timestamp
+
+# ---- digest.py (ephemeral per-run snapshot for the cron job) ---------------
+# Each cron tick binds the port, listens for a SHORT window, renders a small
+# bounded digest to stdout, and deletes the raw capture before exiting.
+digest:
+  seconds: 30            # hard wall-clock cap for the capture window
+  target_digest: 8000    # stop early once the rendered digest reaches this many bytes
+  max_raw: 30000000      # safety ceiling on captured raw bytes
+  keep_raw: false        # true = leave the temp raw file behind (debug)
+  # caps on the rendered digest sections:
+  max_alerts: 60
+  max_domains: 40
+  max_scanners: 15
+  max_ports: 15
+  max_egress: 40
+
+# ---- include / exclude ------------------------------------------------------
+# Environment-specific identifiers. Replace the placeholders with your LAN.
+interface:
+  wan: igb3              # WAN interface name; digest keeps lines mentioning this
+  lan: [igb1, igb2]      # internal interfaces (excluded from the WAN digest)
+
+include:
+  only_wan: true         # keep only WAN-interface traffic (receiver + digest)
+
+exclude:
+  # Drop any packet whose SOURCE IP appears here (scrubbed: add yours).
+  src_ips: []            # e.g. ["203.0.113.7"]
+  # Drop any line containing one of these substrings (case-insensitive).
+  substrings:
+    - "sendto: Host is down"   # secondary-syslog feedback-loop spam
+    - "longfast"
+    - "meshtastic"
+    - "mqtt"
+  # Drop lines where the source OR destination port matches (MQTT/meshtastic).
+  ports: [16720, 1883, 8883]
+
+# ---- digest heuristics (not secrets) ---------------------------------------
+# Destination ports considered "normal". Internal->external egress to any
+# NON-listed port is flagged as a possible odd connection / C2 in the digest.
+standard_ports: [20, 22, 25, 53, 67, 68, 80, 110, 123, 143, 161, 162, 179,
+                 389, 443, 464, 465, 500, 514, 546, 547, 587, 636, 853, 993,
+                 995, 1194, 1293, 1701, 1723, 1812, 3478, 4164, 4500, 5060,
+                 5061, 8080, 8443]
+
+# TLDs that, in a WAN DNS query, are flagged as suspicious.
+weird_tlds: [xyz, top, icu, click, gq, ml, cf, tk, pw, rest, monster, beauty,
+             cfd, quest, lol, bond, buzz, cam, fit, win, biz, online, site]
+
+# ---- cron -------------------------------------------------------------------
+# Where the digest wrapper writes its last rendered digest (for tailing/debug).
+# Empty = stdout only. The cron delivery channel (XMPP, Discord, etc.) is
+# configured on the scheduler side, not here.
+cron:
+  state_file: ""         # optional path to stash the latest digest

@@ -1,0 +1,12 @@
+# Secrets / local config — keep your real LAN values out of git
+config.local.yaml
+.env
+
+# Captured logs (may contain public IPs / domains)
+*.log
+*.log.*
+pfsense_window.log
+
+# Python
+__pycache__/
+*.pyc

@@ -1,0 +1,10 @@
+{
+  "name": "pfsense-wan-security-digest",
+  "schedule": "0 */2 * * *",
+  "repeat": "forever",
+  "enabled": true,
+  "script": "digest.py",
+  "enabled_toolsets": ["terminal"],
+  "deliver": "<your-channel>",
+  "prompt": "You are the operations assistant. A pre-run script already captured a short window of pfSense WAN syslog and produced the bounded digest below (the raw capture was deleted after capture). Summarize only what is actionable: suricata alerts, suspicious DNS, blocked scanners, and any internal->external egress on non-standard ports. Keep it short. If the digest says 'no logs received', note that briefly and move on. Schedule, delivery channel, and any persona/delivery-host identifiers are yours to set in this file or your scheduler."
+}
