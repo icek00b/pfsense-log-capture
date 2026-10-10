@@ -116,9 +116,6 @@ Every value is overridable by a matching CLI flag.
   default; tune `exclude` to taste. Redirect to `--dump` and count rather than
   printing raw to the terminal.
 
-## About this repo
-
-Secrets, LAN IPs, hostnames, and the delivery channel were scrubbed before
-publishing. Ports are kept verbatim (they aren't secrets). Fill in your own
+Fill in your own
 values under `config.yaml` (`exclude.src_ips`, `interface`) and in
 `cron.example.json` (`deliver`).
